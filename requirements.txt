@@ -1,2 +1,9 @@
 fastapi
+
+# ASGI web server
 uvicorn
+
+# Database
+psycopg2-binary
+sqlmodel
+alembic

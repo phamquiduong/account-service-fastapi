@@ -6,15 +6,28 @@ services:
     expose:
       - 8000
     environment:
-      - DB_DEFAULT_HOST=postgresql
-      - DB_DEFAULT_PORT=5432
-      - DB_DEFAULT_USER=${POSTGRES_USER}
-      - DB_DEFAULT_PASS=${POSTGRES_PASS}
-      - DB_DEFAULT_NAME=${POSTGRES_NAME}
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
+      - DB_NAME=${POSTGRES_NAME}
     volumes:
       - ../src:/src
     command: bash -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     restart: always
+
+  alembic:
+    build:
+      context: ..
+      dockerfile: docker/alembic/Dockerfile
+    environment:
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
+      - DB_NAME=${POSTGRES_NAME}
+    volumes:
+      - ../src:/src
 
   postgresql:
     image: postgres:17.6
