@@ -1,0 +1,10 @@
+# Python
+.venv
+__pycache__/
+
+# Docker
+docker/*/data/
+docker/.env
+
+# Environment file
+.env

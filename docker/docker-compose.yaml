@@ -1,0 +1,37 @@
+services:
+  fastapi:
+    build:
+      context: ..
+      dockerfile: docker/fastapi/Dockerfile
+    expose:
+      - 8000
+    environment:
+      - DB_DEFAULT_HOST=postgresql
+      - DB_DEFAULT_PORT=5432
+      - DB_DEFAULT_USER=${POSTGRES_USER}
+      - DB_DEFAULT_PASS=${POSTGRES_PASS}
+      - DB_DEFAULT_NAME=${POSTGRES_NAME}
+    volumes:
+      - ../src:/src
+    command: bash -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    restart: always
+
+  postgresql:
+    image: postgres:17.6
+    expose:
+      - 5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASS}
+      POSTGRES_DB: ${POSTGRES_NAME}
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data
+    restart: always
+
+  nginx:
+    image: nginx:1.29.2
+    ports:
+      - ${NGINX_PORT}:80
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    restart: always
