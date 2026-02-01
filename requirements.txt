@@ -7,3 +7,6 @@ uvicorn
 psycopg2-binary
 sqlmodel
 alembic
+
+# Validator
+email-validator

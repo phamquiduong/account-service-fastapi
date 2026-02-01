@@ -25,18 +25,8 @@ def upgrade():
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("email", sa.String(255), nullable=False),
         sa.Column("password", sa.String(255), nullable=False),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=False,
-        ),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
     )
 
     op.create_index("ix_users_email", "users", ["email"], unique=True)
