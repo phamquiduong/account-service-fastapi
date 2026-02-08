@@ -10,3 +10,6 @@ alembic
 
 # Validator
 email-validator
+
+# Security
+pwdlib[argon2]
