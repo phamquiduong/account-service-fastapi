@@ -10,4 +10,7 @@ class User(TimestampMixin, table=True):
     email: EmailStr = Field(index=True, unique=True)
     password: PasswordField
 
+    is_verify_email: bool = Field(default=False)
+    is_active: bool = Field(default=True)
+
     __tablename__: str = "users"
