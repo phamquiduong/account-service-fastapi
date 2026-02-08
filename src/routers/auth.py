@@ -1,0 +1,32 @@
+from fastapi import APIRouter, HTTPException, status
+
+from decorators.security import protect_response
+from dependencies.repositories.user import UserRepositoryDep
+from dependencies.services.password import PasswordServiceDep
+from dependencies.services.token import TokenServiceDep
+from schemas.auth import LoginSchema
+from schemas.token import TokenResponse
+
+auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@auth_router.post("/login")
+@protect_response
+async def login(
+    user_repository: UserRepositoryDep,
+    password_service: PasswordServiceDep,
+    token_service: TokenServiceDep,
+    login_schema: LoginSchema,
+) -> TokenResponse:
+    user = await user_repository.get_by_email(login_schema.email)
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if not password_service.verify_password(plain_password=login_schema.password, hashed_password=user.password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is incorrect")
+
+    return TokenResponse(
+        access_token=token_service.create_access_token(user),
+        refresh_token=token_service.create_refresh_token(user),
+    )

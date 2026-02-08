@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from routers import user_router
+from routers import auth_router, user_router
 
 app = FastAPI(
     title="Account Service",
@@ -11,3 +11,4 @@ app = FastAPI(
 
 # Router
 app.include_router(user_router)
+app.include_router(auth_router)

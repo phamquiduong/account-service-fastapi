@@ -13,3 +13,6 @@ email-validator
 
 # Security
 pwdlib[argon2]
+
+# Authentication
+pyjwt
