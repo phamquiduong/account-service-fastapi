@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from decorators.security import protect_response
 from dependencies.repositories.user import UserRepositoryDep
+from dependencies.services.dynamodb import WhiteListDynamoDBServiceDep
 from dependencies.services.password import PasswordServiceDep
 from dependencies.services.token import TokenServiceDep
 from schemas.auth import LoginSchema
@@ -16,6 +17,7 @@ async def login(
     user_repository: UserRepositoryDep,
     password_service: PasswordServiceDep,
     token_service: TokenServiceDep,
+    white_list_dynamodb_service: WhiteListDynamoDBServiceDep,
     login_schema: LoginSchema,
 ) -> TokenResponse:
     user = await user_repository.get_by_email(login_schema.email)
@@ -26,7 +28,12 @@ async def login(
     if not password_service.verify_password(plain_password=login_schema.password, hashed_password=user.password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is incorrect")
 
+    access_token_payload = token_service.create_access_token_payload(user)
+    refresh_token_payload = token_service.create_refresh_token_payload(user)
+
+    white_list_dynamodb_service.add_item(refresh_token_payload.model_dump())
+
     return TokenResponse(
-        access_token=token_service.create_access_token(user),
-        refresh_token=token_service.create_refresh_token(user),
+        access_token=token_service.create_access_token(access_token_payload),
+        refresh_token=token_service.create_refresh_token(refresh_token_payload),
     )

@@ -16,3 +16,5 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE = timedelta(minutes=5)
 REFRESH_TOKEN_EXPIRE = timedelta(days=60)
+
+TOKEN_WHITE_LIST_TABLE = os.environ["TOKEN_WHITE_LIST_TABLE"]

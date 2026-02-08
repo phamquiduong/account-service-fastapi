@@ -1,6 +1,7 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from constants.token import TokenType
 from models.user import User
@@ -11,6 +12,7 @@ class TokenPayloadSchema(BaseModel):
     token_type: TokenType | None = None
     iat: datetime
     exp: datetime
+    jti: uuid.UUID = Field(default_factory=uuid.uuid4)
 
     @classmethod
     def from_user(cls, user: User, exp: timedelta):

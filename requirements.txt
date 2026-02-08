@@ -16,3 +16,6 @@ pwdlib[argon2]
 
 # Authentication
 pyjwt
+
+# AWS
+boto3

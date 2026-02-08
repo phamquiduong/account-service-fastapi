@@ -3,9 +3,9 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel import Session, create_engine
 
-from settings import DB_URL
+import settings
 
-_engine = create_engine(DB_URL, pool_pre_ping=True)
+_engine = create_engine(settings.DB_URL, pool_pre_ping=True)
 
 
 async def _get_session():
