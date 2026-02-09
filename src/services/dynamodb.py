@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 
 import boto3
+from boto3.dynamodb.conditions import Key
 
 logger = logging.getLogger()
 
@@ -35,6 +36,25 @@ class DynamoDBService:
             return None
         return item
 
+    def query_by_partition_key(self, partition_key: str, partition_value: Any) -> list[dict]:
+        partition_value = self._encoder.default(partition_value)
+        items: list[dict] = []
+        last_key = None
+
+        while True:
+            kwargs = {"KeyConditionExpression": Key(partition_key).eq(partition_value)}
+            if last_key:
+                kwargs["ExclusiveStartKey"] = last_key
+
+            response = self._table.query(**kwargs)
+            items.extend(response.get("Items", []))
+
+            last_key = response.get("LastEvaluatedKey")
+            if not last_key:
+                break
+
+        return items
+
     def update(self, key: dict[str, Any], **update_data):
         key = {key: self._encoder.default(value) for key, value in key.items()}
         update_data = {key: self._encoder.default(value) for key, value in update_data.items()}
@@ -54,3 +74,9 @@ class DynamoDBService:
     def delete(self, key: dict[str, Any]):
         key = {key: self._encoder.default(value) for key, value in key.items()}
         self._table.delete_item(Key=key)
+
+    def delete_by_partition_key(self, partition_key: str, partition_value: Any, sorted_key: str):
+        items = self.query_by_partition_key(partition_key=partition_key, partition_value=partition_value)
+        with self._table.batch_writer() as batch:
+            for item in items:
+                batch.delete_item(Key={partition_key: item[partition_key], sorted_key: item[sorted_key]})
