@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from errors.handler import handle_error
 from routers import auth_router, user_router
 
 app = FastAPI(
@@ -8,6 +9,8 @@ app = FastAPI(
     summary="Account service for user management and authentication.",
     contact={"name": "Pham Qui Duong", "url": "https://phamquiduong.github.io/"},
 )
+
+handle_error(app)
 
 # Router
 app.include_router(user_router)
