@@ -1,10 +1,18 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 
 from constants.token import TokenType
 from models.user import User
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+
+
+class OAuth2TokenSchema(BaseModel):
+    access_token: str
+    token_type: str
 
 
 class TokenPayloadSchema(BaseModel):

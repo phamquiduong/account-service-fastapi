@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
 
 from decorators.security import protect_response
+from dependencies.auth import AuthTokenPayloadDep
 from dependencies.repositories.user import UserRepositoryDep
 from dependencies.services.password import PasswordServiceDep
+from errors.api_exception import APIException
 from models.user import User
 from schemas.user import UserCreateSchema
 
@@ -18,3 +20,13 @@ async def register(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists")
     user_create.password = password_service.get_password_hash(user_create.password)
     return await user_repository.create(user_create)
+
+
+@user_router.get("/me")
+async def get_current_user_info(user_repository: UserRepositoryDep, auth_token_payload: AuthTokenPayloadDep) -> User:
+    user = await user_repository.get_by_id(int(auth_token_payload.sub))
+
+    if not user:
+        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
+
+    return user
