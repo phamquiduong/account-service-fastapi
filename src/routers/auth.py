@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Body, HTTPException, status
 
 from decorators.security import protect_response
 from dependencies.repositories.user import UserRepositoryDep
@@ -6,7 +6,7 @@ from dependencies.services.dynamodb import WhiteListDynamoDBServiceDep
 from dependencies.services.password import PasswordServiceDep
 from dependencies.services.token import TokenServiceDep
 from schemas.auth import LoginSchema
-from schemas.token import TokenResponse
+from schemas.token import TokenPayloadSchema, TokenResponse
 
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -37,3 +37,8 @@ async def login(
         access_token=token_service.create_access_token(access_token_payload),
         refresh_token=token_service.create_refresh_token(refresh_token_payload),
     )
+
+
+@auth_router.post("/verify")
+async def verify(token_service: TokenServiceDep, token: str = Body()) -> TokenPayloadSchema:
+    return token_service.get_token_payload(token)
