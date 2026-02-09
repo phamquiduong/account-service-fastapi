@@ -12,7 +12,7 @@ class DynamoDBService:
     class _Encoder:
         def default(self, obj: Any):
             if isinstance(obj, uuid.UUID):
-                return str(obj)
+                return obj.bytes
             if isinstance(obj, datetime):
                 return int(obj.timestamp())
             return obj
