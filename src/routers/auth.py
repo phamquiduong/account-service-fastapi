@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Body, HTTPException, status
 
+from constants.token import TokenType
 from decorators.security import protect_response
 from dependencies.repositories.user import UserRepositoryDep
 from dependencies.services.dynamodb import WhiteListDynamoDBServiceDep
 from dependencies.services.password import PasswordServiceDep
 from dependencies.services.token import TokenServiceDep
+from errors.api_exception import APIException
 from schemas.auth import LoginSchema
 from schemas.token import TokenPayloadSchema, TokenResponse
 
@@ -42,3 +44,34 @@ async def login(
 @auth_router.post("/verify")
 async def verify(token_service: TokenServiceDep, token: str = Body()) -> TokenPayloadSchema:
     return token_service.get_token_payload(token)
+
+
+@auth_router.post("/refresh")
+async def refresh_token(
+    user_repository: UserRepositoryDep,
+    token_service: TokenServiceDep,
+    white_list_dynamodb_service: WhiteListDynamoDBServiceDep,
+    token: str = Body(),
+) -> TokenResponse:
+    token_payload = token_service.get_token_payload(token)
+
+    if token_payload.token_type != TokenType.REFRESH:
+        raise APIException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token required")
+
+    if not white_list_dynamodb_service.get_item({"sub": token_payload.sub, "jti": token_payload.jti}):
+        raise APIException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token was revoked")
+
+    user = await user_repository.get_by_id(int(token_payload.sub))
+    if not user:
+        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
+
+    access_token_payload = token_service.create_access_token_payload(user)
+    refresh_token_payload = token_service.create_refresh_token_payload(user)
+
+    white_list_dynamodb_service.delete({"sub": token_payload.sub, "jti": token_payload.jti})
+    white_list_dynamodb_service.add_item(refresh_token_payload.model_dump())
+
+    return TokenResponse(
+        access_token=token_service.create_access_token(access_token_payload),
+        refresh_token=token_service.create_refresh_token(refresh_token_payload),
+    )

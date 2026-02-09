@@ -18,3 +18,6 @@ class UserRepository:
 
     async def get_by_email(self, email: EmailStr) -> User | None:
         return self._session.exec(select(User).where(User.email == email)).first()
+
+    async def get_by_id(self, user_id: int) -> User | None:
+        return self._session.exec(select(User).where(User.id == user_id)).first()

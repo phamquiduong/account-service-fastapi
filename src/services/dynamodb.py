@@ -27,6 +27,7 @@ class DynamoDBService:
         self._table.put_item(Item=item)
 
     def get_item(self, key: dict[str, Any]) -> dict | None:
+        key = {key: self._encoder.default(value) for key, value in key.items()}
         response = self._table.get_item(Key=key)
         item = response.get("Item")
         if not item:
@@ -35,6 +36,9 @@ class DynamoDBService:
         return item
 
     def update(self, key: dict[str, Any], **update_data):
+        key = {key: self._encoder.default(value) for key, value in key.items()}
+        update_data = {key: self._encoder.default(value) for key, value in update_data.items()}
+
         expression = "SET " + " , ".join(f"#update_{key} = :update_{key}" for key in update_data)
 
         expression_names = {f"#update_{key}": key for key in update_data}
@@ -46,3 +50,7 @@ class DynamoDBService:
             ExpressionAttributeNames=expression_names,
             ExpressionAttributeValues=expression_values,
         )
+
+    def delete(self, key: dict[str, Any]):
+        key = {key: self._encoder.default(value) for key, value in key.items()}
+        self._table.delete_item(Key=key)
