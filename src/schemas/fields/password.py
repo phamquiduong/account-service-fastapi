@@ -8,7 +8,7 @@ from pydantic_core import PydanticCustomError
 PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,64}$")
 
 
-def validate_password(v: str) -> str:
+def _validate_password(v: str) -> str:
     if not PASSWORD_REGEX.match(v):
         raise PydanticCustomError("Invalid", "invalid password")
     return v
@@ -28,5 +28,5 @@ PasswordField = Annotated[
         },
         exclude=True,
     ),
-    AfterValidator(validate_password),
+    AfterValidator(_validate_password),
 ]

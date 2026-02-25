@@ -23,11 +23,11 @@ class DynamoDBService:
         self._table = self._dynamodb.Table(dynamo_table)  # type:ignore
         self._encoder = self._Encoder()
 
-    def add_item(self, item: dict[str, Any]) -> None:
+    async def add_item(self, item: dict[str, Any]) -> None:
         item = {key: self._encoder.default(value) for key, value in item.items()}
         self._table.put_item(Item=item)
 
-    def get_item(self, key: dict[str, Any]) -> dict | None:
+    async def get_item(self, key: dict[str, Any]) -> dict | None:
         key = {key: self._encoder.default(value) for key, value in key.items()}
         response = self._table.get_item(Key=key)
         item = response.get("Item")
@@ -36,7 +36,7 @@ class DynamoDBService:
             return None
         return item
 
-    def query_by_partition_key(self, partition_key: str, partition_value: Any) -> list[dict]:
+    async def query_by_partition_key(self, partition_key: str, partition_value: Any) -> list[dict]:
         partition_value = self._encoder.default(partition_value)
         items: list[dict] = []
         last_key = None
@@ -55,7 +55,7 @@ class DynamoDBService:
 
         return items
 
-    def update(self, key: dict[str, Any], **update_data):
+    async def update(self, key: dict[str, Any], **update_data):
         key = {key: self._encoder.default(value) for key, value in key.items()}
         update_data = {key: self._encoder.default(value) for key, value in update_data.items()}
 
@@ -71,12 +71,12 @@ class DynamoDBService:
             ExpressionAttributeValues=expression_values,
         )
 
-    def delete(self, key: dict[str, Any]):
+    async def delete(self, key: dict[str, Any]):
         key = {key: self._encoder.default(value) for key, value in key.items()}
         self._table.delete_item(Key=key)
 
-    def delete_by_partition_key(self, partition_key: str, partition_value: Any, sorted_key: str):
-        items = self.query_by_partition_key(partition_key=partition_key, partition_value=partition_value)
+    async def delete_by_partition_key(self, partition_key: str, partition_value: Any, sorted_key: str):
+        items = await self.query_by_partition_key(partition_key=partition_key, partition_value=partition_value)
         with self._table.batch_writer() as batch:
             for item in items:
                 batch.delete_item(Key={partition_key: item[partition_key], sorted_key: item[sorted_key]})
