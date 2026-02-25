@@ -12,7 +12,8 @@ class UserService:
         self._password_service = password_service
 
     async def create(self, user_create: UserCreateSchema) -> User:
-        user = User(email=user_create.email, password=user_create.password)
+        password_hashed = self._password_service.get_password_hash(user_create.password)
+        user = User(email=user_create.email, password=password_hashed)
         self._session.add(user)
         self._session.commit()
         self._session.refresh(user)

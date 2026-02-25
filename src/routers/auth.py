@@ -6,7 +6,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 from constants.token import TokenType
 from decorators.security import protect_response
 from dependencies.services.dynamodb import WhiteListDynamoDBServiceDep
-from dependencies.services.password import PasswordServiceDep
 from dependencies.services.token import TokenServiceDep
 from dependencies.services.user import UserServiceDep
 from errors.api_exception import APIException
@@ -20,7 +19,6 @@ auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 @protect_response
 async def login(
     user_service: UserServiceDep,
-    password_service: PasswordServiceDep,
     token_service: TokenServiceDep,
     white_list_dynamodb_service: WhiteListDynamoDBServiceDep,
     login_schema: LoginSchema,
@@ -30,7 +28,7 @@ async def login(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    if not password_service.verify_password(plain_password=login_schema.password, hashed_password=user.password):
+    if not await user_service.verify_password(user=user, current_password=login_schema.password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is incorrect")
 
     access_token_payload = token_service.create_access_token_payload(user)
@@ -47,7 +45,6 @@ async def login(
 @auth_router.post("/token", include_in_schema=False)
 async def login_for_access_token(
     user_service: UserServiceDep,
-    password_service: PasswordServiceDep,
     token_service: TokenServiceDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> OAuth2TokenSchema:
@@ -56,7 +53,7 @@ async def login_for_access_token(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    if not password_service.verify_password(plain_password=form_data.password, hashed_password=user.password):
+    if not await user_service.verify_password(user=user, current_password=form_data.password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is incorrect")
 
     access_token_payload = token_service.create_access_token_payload(user)

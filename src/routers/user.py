@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException, status
 from decorators.security import protect_response
 from dependencies.auth import AuthTokenPayloadDep
 from dependencies.services.dynamodb import WhiteListDynamoDBServiceDep
-from dependencies.services.password import PasswordServiceDep
 from dependencies.services.user import UserServiceDep
 from errors.api_exception import APIException
 from models.user import User
@@ -15,24 +14,17 @@ user_router = APIRouter(prefix="/users", tags=["User"])
 
 @user_router.post("", status_code=status.HTTP_201_CREATED)
 @protect_response
-async def register(
-    user_service: UserServiceDep, password_service: PasswordServiceDep, user_create: UserCreateSchema
-) -> User:
+async def register(user_service: UserServiceDep, user_create: UserCreateSchema) -> User:
     if await user_service.get_by_email(user_create.email) is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists")
-
-    user_create.password = password_service.get_password_hash(user_create.password)
-
     return await user_service.create(user_create)
 
 
 @user_router.get("/me")
 async def get_current_user_info(user_service: UserServiceDep, auth_token_payload: AuthTokenPayloadDep) -> User:
     user = await user_service.get_by_id(int(auth_token_payload.sub))
-
     if not user:
         raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
-
     return user
 
 
@@ -49,7 +41,7 @@ async def change_current_user_password(
     if not user:
         raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
 
-    if await user_service.verify_password(user=user, current_password=change_password.current_password):
+    if not await user_service.verify_password(user=user, current_password=change_password.current_password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is incorrect")
 
     await user_service.update_password(user_id=user_id, new_password=change_password.new_password)
