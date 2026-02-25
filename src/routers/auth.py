@@ -5,9 +5,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from constants.token import TokenType
 from decorators.security import protect_response
-from dependencies.services.dynamodb import WhiteListDynamoDBServiceDep
 from dependencies.services.token import TokenServiceDep
 from dependencies.services.user import UserServiceDep
+from dependencies.services.white_list import WhiteListServiceDep
 from errors.api_exception import APIException
 from schemas.auth import LoginSchema
 from schemas.token import OAuth2TokenSchema, TokenPayloadSchema, TokenResponse
@@ -20,7 +20,7 @@ auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def login(
     user_service: UserServiceDep,
     token_service: TokenServiceDep,
-    white_list_dynamodb_service: WhiteListDynamoDBServiceDep,
+    white_list_service: WhiteListServiceDep,
     login_schema: LoginSchema,
 ) -> TokenResponse:
     user = await user_service.get_by_email(login_schema.email)
@@ -34,7 +34,7 @@ async def login(
     access_token_payload = token_service.create_access_token_payload(user)
     refresh_token_payload = token_service.create_refresh_token_payload(user)
 
-    white_list_dynamodb_service.add_item(refresh_token_payload.model_dump())
+    await white_list_service.create(refresh_token_payload)
 
     return TokenResponse(
         access_token=token_service.create_access_token(access_token_payload),
@@ -71,7 +71,7 @@ async def verify(token_service: TokenServiceDep, token: str = Body()) -> TokenPa
 async def refresh_token(
     user_service: UserServiceDep,
     token_service: TokenServiceDep,
-    white_list_dynamodb_service: WhiteListDynamoDBServiceDep,
+    white_list_service: WhiteListServiceDep,
     token: str = Body(),
 ) -> TokenResponse:
     token_payload = token_service.get_token_payload(token)
@@ -79,7 +79,7 @@ async def refresh_token(
     if token_payload.token_type != TokenType.REFRESH:
         raise APIException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token required")
 
-    if not white_list_dynamodb_service.get_item({"sub": token_payload.sub, "jti": token_payload.jti}):
+    if not await white_list_service.is_exist(token_payload=token_payload):
         raise APIException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token was revoked")
 
     user = await user_service.get_by_id(int(token_payload.sub))
@@ -89,8 +89,8 @@ async def refresh_token(
     access_token_payload = token_service.create_access_token_payload(user)
     refresh_token_payload = token_service.create_refresh_token_payload(user)
 
-    white_list_dynamodb_service.delete({"sub": token_payload.sub, "jti": token_payload.jti})
-    white_list_dynamodb_service.add_item(refresh_token_payload.model_dump())
+    await white_list_service.delete(refresh_token_payload)
+    await white_list_service.create(refresh_token_payload)
 
     return TokenResponse(
         access_token=token_service.create_access_token(access_token_payload),

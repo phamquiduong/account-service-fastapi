@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, status
 
 from decorators.security import protect_response
 from dependencies.auth import AuthTokenPayloadDep
-from dependencies.services.dynamodb import WhiteListDynamoDBServiceDep
 from dependencies.services.user import UserServiceDep
+from dependencies.services.white_list import WhiteListServiceDep
 from errors.api_exception import APIException
 from models.user import User
 from schemas.auth import ChangePasswordSchema
@@ -31,7 +31,7 @@ async def get_current_user_info(user_service: UserServiceDep, auth_token_payload
 @user_router.patch("/me/change-password", status_code=status.HTTP_204_NO_CONTENT)
 async def change_current_user_password(
     user_service: UserServiceDep,
-    white_list_dynamodb_service: WhiteListDynamoDBServiceDep,
+    white_list_service: WhiteListServiceDep,
     auth_token_payload: AuthTokenPayloadDep,
     change_password: ChangePasswordSchema,
 ) -> None:
@@ -45,7 +45,4 @@ async def change_current_user_password(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is incorrect")
 
     await user_service.update_password(user_id=user_id, new_password=change_password.new_password)
-
-    white_list_dynamodb_service.delete_by_partition_key(
-        partition_key="sub", partition_value=auth_token_payload.sub, sorted_key="jti"
-    )
+    await white_list_service.delete_by_user_id(user_id=auth_token_payload.sub)

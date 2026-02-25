@@ -6,8 +6,13 @@ import settings
 from services.dynamodb import DynamoDBService
 
 
-async def _get_white_list_dynamodb_service():
-    yield DynamoDBService(dynamo_table=settings.TOKEN_WHITE_LIST_TABLE)
+def _get_dynamodb_service(table_name: str):
+    async def _dependency():
+        yield DynamoDBService(dynamo_table=table_name)
+
+    return _dependency
 
 
-WhiteListDynamoDBServiceDep = Annotated[DynamoDBService, Depends(_get_white_list_dynamodb_service)]
+WhiteListDynamoDBServiceDep = Annotated[
+    DynamoDBService, Depends(_get_dynamodb_service(table_name=settings.TOKEN_WHITE_LIST_TABLE))
+]
