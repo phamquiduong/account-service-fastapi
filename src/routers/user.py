@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from decorators.security import protect_response
-from dependencies.auth import AuthTokenPayloadDep
+from dependencies.auth import AuthTokenPayloadDep, AuthUserDep
 from dependencies.services.user import UserServiceDep
 from dependencies.services.white_list import WhiteListServiceDep
 from errors.api_exception import APIException
@@ -21,10 +21,7 @@ async def register(user_service: UserServiceDep, user_create: UserCreateSchema) 
 
 
 @user_router.get("/me")
-async def get_current_user_info(user_service: UserServiceDep, auth_token_payload: AuthTokenPayloadDep) -> User:
-    user = await user_service.get_by_id(int(auth_token_payload.sub))
-    if not user:
-        raise APIException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
+async def get_current_user_info(user: AuthUserDep) -> User:
     return user
 
 
