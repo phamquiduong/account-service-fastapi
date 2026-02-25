@@ -2,7 +2,7 @@ from pydantic import EmailStr
 from sqlmodel import Session, select, update
 
 from models.user import User
-from schemas.user import UserCreateSchema
+from schemas.user import UserCreateRequestSchema
 from services.password import PasswordService
 
 
@@ -11,7 +11,7 @@ class UserService:
         self._session = session
         self._password_service = password_service
 
-    async def create(self, user_create: UserCreateSchema) -> User:
+    async def create(self, user_create: UserCreateRequestSchema) -> User:
         password_hashed = self._password_service.get_password_hash(user_create.password)
         user = User(email=user_create.email, password=password_hashed)
         self._session.add(user)

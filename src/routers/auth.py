@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from constants.token import TokenType
@@ -9,7 +9,7 @@ from dependencies.services.token import TokenServiceDep
 from dependencies.services.user import UserServiceDep
 from dependencies.services.white_list import WhiteListServiceDep
 from errors.api_exception import APIException
-from schemas.auth import LoginSchema
+from schemas.auth import LoginRequestSchema, RefreshTokenRequestSchema, VerifyTokenRequestSchema
 from schemas.token import OAuth2TokenSchema, TokenPayloadSchema, TokenResponse
 
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -21,14 +21,14 @@ async def login(
     user_service: UserServiceDep,
     token_service: TokenServiceDep,
     white_list_service: WhiteListServiceDep,
-    login_schema: LoginSchema,
+    login_request: LoginRequestSchema,
 ) -> TokenResponse:
-    user = await user_service.get_by_email(login_schema.email)
+    user = await user_service.get_by_email(login_request.email)
 
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    if not await user_service.verify_password(user=user, current_password=login_schema.password):
+    if not await user_service.verify_password(user=user, current_password=login_request.password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is incorrect")
 
     access_token_payload = token_service.create_access_token_payload(user)
@@ -63,8 +63,8 @@ async def login_for_access_token(
 
 
 @auth_router.post("/verify")
-async def verify(token_service: TokenServiceDep, token: str = Body()) -> TokenPayloadSchema:
-    return token_service.get_token_payload(token)
+async def verify(token_service: TokenServiceDep, verify_token_request: VerifyTokenRequestSchema) -> TokenPayloadSchema:
+    return token_service.get_token_payload(verify_token_request.access_token)
 
 
 @auth_router.post("/refresh")
@@ -72,9 +72,9 @@ async def refresh_token(
     user_service: UserServiceDep,
     token_service: TokenServiceDep,
     white_list_service: WhiteListServiceDep,
-    token: str = Body(),
+    refresh_token_request: RefreshTokenRequestSchema,
 ) -> TokenResponse:
-    token_payload = token_service.get_token_payload(token)
+    token_payload = token_service.get_token_payload(refresh_token_request.refresh_token)
 
     if token_payload.token_type != TokenType.REFRESH:
         raise APIException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token required")
