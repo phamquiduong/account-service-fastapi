@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from dependencies.database import SessionDep
+from dependencies.connections.database import SessionDep
 from dependencies.services.password import PasswordServiceDep
 from services.user import UserService
 

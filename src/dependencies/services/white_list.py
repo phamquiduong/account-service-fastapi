@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from dependencies.services.dynamodb import WhiteListDynamoDBServiceDep
+from dependencies.connections.dynamodb import WhiteListDynamoDBServiceDep
 from services.white_list import WhiteListService
 
 

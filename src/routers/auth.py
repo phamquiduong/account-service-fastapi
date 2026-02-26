@@ -10,7 +10,7 @@ from dependencies.services.user import UserServiceDep
 from dependencies.services.white_list import WhiteListServiceDep
 from errors.api_exception import APIException
 from schemas.auth import LoginRequestSchema, RefreshTokenRequestSchema, VerifyTokenRequestSchema
-from schemas.token import OAuth2TokenSchema, TokenPayloadSchema, TokenResponse
+from schemas.token import OAuth2TokenSchema, TokenDetailResponse, TokenPayloadSchema, TokenResponse
 
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -37,8 +37,14 @@ async def login(
     await white_list_service.create(refresh_token_payload)
 
     return TokenResponse(
-        access_token=token_service.create_access_token(access_token_payload),
-        refresh_token=token_service.create_refresh_token(refresh_token_payload),
+        access=TokenDetailResponse(
+            token=token_service.create_access_token(access_token_payload),
+            payload=access_token_payload,
+        ),
+        refresh=TokenDetailResponse(
+            token=token_service.create_refresh_token(refresh_token_payload),
+            payload=refresh_token_payload,
+        ),
     )
 
 
@@ -93,6 +99,12 @@ async def refresh_token(
     await white_list_service.create(refresh_token_payload)
 
     return TokenResponse(
-        access_token=token_service.create_access_token(access_token_payload),
-        refresh_token=token_service.create_refresh_token(refresh_token_payload),
+        access=TokenDetailResponse(
+            token=token_service.create_access_token(access_token_payload),
+            payload=access_token_payload,
+        ),
+        refresh=TokenDetailResponse(
+            token=token_service.create_refresh_token(refresh_token_payload),
+            payload=refresh_token_payload,
+        ),
     )

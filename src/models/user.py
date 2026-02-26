@@ -1,7 +1,7 @@
 from pydantic import EmailStr
 from sqlmodel import Field
 
-from models.base import TimestampMixin
+from models._base import TimestampMixin
 from schemas.fields.password import PasswordField
 
 

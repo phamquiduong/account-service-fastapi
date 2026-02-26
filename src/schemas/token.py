@@ -40,6 +40,11 @@ class RefreshTokenPayloadSchema(TokenPayloadSchema):
     token_type: TokenType = TokenType.REFRESH
 
 
+class TokenDetailResponse(BaseModel):
+    token: str
+    payload: TokenPayloadSchema
+
+
 class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
+    access: TokenDetailResponse
+    refresh: TokenDetailResponse
